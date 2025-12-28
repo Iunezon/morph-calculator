@@ -1,8 +1,8 @@
 from utils import *
 
-def identify_gene(trait, parent_genes):
+def extract_name_perc(trait):
     base_trait = trait.replace("het", "").strip()
-    base_trait = base_trait.replace("Super", "").strip()
+    base_trait = base_trait.replace("Super ", "").strip()
     base_trait = base_trait.replace("poss", "").strip()
     base_trait = base_trait.replace("ph", "").strip()
     perc = base_trait.split(" ")[0].replace("%","").strip()
@@ -19,30 +19,34 @@ def identify_gene(trait, parent_genes):
         perc = int(perc)
     base_trait = base_trait.replace("cross", "").strip()
     base_trait = base_trait.replace("line", "").strip()
+    return base_trait, perc
+
+def identify_gene(trait, parent_genes):
+    base_trait, perc = extract_name_perc(trait)
 
     match MORPHS[base_trait]["Type"]:
         case "incomplete":
-            if "Super" in trait.lower():
-                parent_genes[base_trait] = [(1, 1), "inc", perc]
+            if "super" in trait.lower():
+                parent_genes[base_trait] = [(1, 1), perc]
             else:
-                parent_genes[base_trait] = [(1, 0), "inc", perc]
+                parent_genes[base_trait] = [(1, 0), perc]
         case "recessive":
-            if "het" in trait.lower():
-                parent_genes[base_trait] = [(0, 1), "rec", perc]
+            if "het" in trait.lower() or "ph" in trait.lower():
+                parent_genes[base_trait] = [(0, 1), perc]
             else:
-                parent_genes[base_trait] = [(0, 1), "rec", perc]
+                parent_genes[base_trait] = [(1, 1), perc]
         case "co-dominant":
-            parent_genes[base_trait] = [(1, 0), "cod", perc]
+            parent_genes[base_trait] = [(1, 0), perc]
         case "dominant":
-            parent_genes[base_trait] = [(1, 0), "dom", perc]
+            parent_genes[base_trait] = [(1, 0), perc]
         case "linebreed":
-            parent_genes[base_trait] = [(1, 1), "lin", perc]
+            parent_genes[base_trait] = [(1, 1), perc]
         case "polygenic":
-            parent_genes[base_trait] = [(1, 1), "pol", perc]
+            parent_genes[base_trait] = [(1, 1), perc]
         case "combo" | "linebreed_combo":
+            print(COMBO[trait])
             for trait in COMBO[trait]["components"].split(","):
                 identify_gene(trait.strip(), parent_genes)
-    return
 
 def get_genes(parent):
     parent = parent["morph"].split(",")
