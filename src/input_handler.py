@@ -44,7 +44,6 @@ def identify_gene(trait, parent_genes):
         case "polygenic":
             parent_genes[base_trait] = [(1, 1), perc]
         case "combo" | "linebreed_combo":
-            print(COMBO[trait])
             for trait in COMBO[trait]["components"].split(","):
                 identify_gene(trait.strip(), parent_genes)
 

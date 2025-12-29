@@ -10,9 +10,12 @@ def main():
 
     sire = get_genes(input_file["sire"])
     dam = get_genes(input_file["dam"])
-    
-    print("Sire Genes:", sire)
-    print("Dam Genes:", dam)
+
+    offspring, messages = calculate_offspring(sire, dam)
+    print(offspring)
+
+    outcomes = get_possible_outcomes(offspring)
+    print(outcomes)
 
 if __name__ == "__main__":
     main()
