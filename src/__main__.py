@@ -12,10 +12,11 @@ def main():
     dam = get_genes(input_file["dam"])
 
     offspring, messages = calculate_offspring(sire, dam)
-    print(offspring)
 
     outcomes = get_possible_outcomes(offspring)
-    print(outcomes)
+    for outcome in sorted(outcomes, key=lambda x: x[1], reverse=True):
+        print(f"{outcome[1]:.2f}%: {outcome[0]}")
+    print(f"NOTE: {messages}")
 
 if __name__ == "__main__":
     main()
