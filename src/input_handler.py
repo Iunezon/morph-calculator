@@ -1,4 +1,4 @@
-from utils import *
+from src.utils import *
 
 def extract_name_perc(trait):
     base_trait = trait.replace("het", "").strip()

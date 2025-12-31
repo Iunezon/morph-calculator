@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leopard Gecko Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 font-sans text-slate-800">
+
+    <div class="max-w-3xl mx-auto mt-10 p-6 bg-white rounded-xl shadow-xl">
+        <h1 class="text-3xl font-bold text-center text-emerald-600 mb-8">🧬 Gecko Genetics</h1>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="p-4 bg-blue-50 rounded-lg border border-blue-100">
+                <h2 class="text-xl font-bold mb-2 text-blue-800">Sire (Padre)</h2>
+                <label class="block text-sm mb-1 text-gray-600">Inserisci i tratti separati da virgola</label>
+                <textarea id="sireMorph" rows="3" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-400" 
+                placeholder="Es: Tremper Albino, Mack Snow"></textarea>
+            </div>
+
+            <div class="p-4 bg-pink-50 rounded-lg border border-pink-100">
+                <h2 class="text-xl font-bold mb-2 text-pink-800">Dam (Madre)</h2>
+                <label class="block text-sm mb-1 text-gray-600">Inserisci i tratti separati da virgola</label>
+                <textarea id="damMorph" rows="3" class="w-full p-2 border rounded focus:ring-2 focus:ring-pink-400" 
+                placeholder="Es: White & Yellow, Panda"></textarea>
+            </div>
+        </div>
+
+        <button onclick="calcolaGenetica()" class="w-full mt-6 bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-6 rounded-lg transition duration-300 transform hover:scale-[1.01]">
+            Calcola Cuccioli
+        </button>
+
+        <div id="loading" class="hidden text-center mt-6 text-gray-500">Calcolo in corso...</div>
+        
+        <div id="outputArea" class="hidden mt-8">
+            <h3 class="text-2xl font-bold mb-4 border-b pb-2">Risultati Previsti</h3>
+            <ul id="resultsList" class="space-y-2">
+                </ul>
+
+            <div id="notesArea" class="mt-6 p-4 bg-yellow-50 text-yellow-800 rounded border border-yellow-200 text-sm hidden">
+                <strong>Note genetiche:</strong> <span id="notesText"></span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function calcolaGenetica() {
+            // 1. Prendi i dati dall'input
+            const sireInput = document.getElementById('sireMorph').value;
+            const damInput = document.getElementById('damMorph').value;
+            
+            const loader = document.getElementById('loading');
+            const output = document.getElementById('outputArea');
+            
+            output.classList.add('hidden');
+            loader.classList.remove('hidden');
+
+            // 2. Costruisci il JSON esattamente come nel tuo file test_1.json
+            const payload = {
+                sire: { morph: sireInput },
+                dam: { morph: damInput }
+            };
+
+            try {
+                // 3. Invia al backend Python
+                const response = await fetch('http://127.0.0.1:8000/calculate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                // 4. Mostra i risultati
+                const list = document.getElementById('resultsList');
+                list.innerHTML = ''; // Pulisci vecchi risultati
+
+                data.results.forEach(item => {
+                    const li = document.createElement('li');
+                    li.className = "flex justify-between items-center bg-gray-50 p-3 rounded border hover:bg-gray-100";
+                    li.innerHTML = `
+                        <span class="font-medium">${item.morph}</span>
+                        <span class="font-bold text-emerald-600">${item.probability}%</span>
+                    `;
+                    list.appendChild(li);
+                });
+
+                // Gestione Note
+                if (data.notes && data.notes.length > 0) {
+                    document.getElementById('notesArea').classList.remove('hidden');
+                    document.getElementById('notesText').innerText = data.notes; // O array join se è una lista
+                } else {
+                    document.getElementById('notesArea').classList.add('hidden');
+                }
+
+                output.classList.remove('hidden');
+            } catch (error) {
+                alert("Errore di connessione al server! Assicurati che api.py sia in esecuzione.");
+                console.error(error);
+            } finally {
+                loader.classList.add('hidden');
+            }
+        }
+    </script>
+</body>
+</html>

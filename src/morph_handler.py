@@ -1,4 +1,4 @@
-from utils import *
+from src.utils import *
 import itertools
 
 def get_priority(label, gene_name):

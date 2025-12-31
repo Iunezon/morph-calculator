@@ -1,5 +1,5 @@
 import itertools
-from utils import *
+from src.utils import *
 
 def linebreed_calculation(sire_gene, dam_gene):
     if sire_gene[0] == (1, 1): 
