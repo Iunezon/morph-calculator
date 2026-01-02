@@ -35,6 +35,8 @@ def calculate_offspring(sire, dam):
     messag_poly = "I seguenti tratti sono poligenici e la loro presenza visiva potrebbe variare significativa nella prole:\n"
     message_poss = "I seguenti tratti non sono garantiti in quanto la presenza del gene nel/i genitore/i non è al 100%:\n"
     message_ph = "I seguenti tratti non sono garantiti in quanto non si conosce la percentuale esatta della presenza del gene in almeno uno dei genitori:\n"
+    if "Normal" in gene_set:
+        gene_set.remove("Normal")
 
     for gene in gene_set:
         gene_type = MORPHS[gene]["Type"]
@@ -53,13 +55,20 @@ def calculate_offspring(sire, dam):
             offspring[gene] = ""
             messag_poly += f"{gene}\n"
         else:
-            if dam[gene][1] == 1 and sire[gene][1] == 1:
-                if gene_type == "recessive":
+            if gene_type == "recessive" and not (f[0] == (1, 1) or m[0] == (1, 1)):
+                if f[0] == (0, 0) and m[1] < 100:
                     offspring[gene] = "ph"
-                    message_ph += f"{gene}\n"
+                    message_ph += f"{gene} nella madre\n"
+                elif m[0] == (0, 0) and f[1] < 100:
+                    offspring[gene] = "ph"
+                    message_ph += f"{gene} nel padre\n"
                 else:
-                    offspring[gene] = "poss"
-                    message_poss += f"{gene}\n"
+                    offspring[gene] = punnett_square(m, f)
+                    if m[1] < 100 or f[1] < 100:
+                        message_poss += f"{gene}\n"
+            elif f[1] <= 1 and m[1] <= 1:
+                offspring[gene] = "poss"
+                message_poss += f"{gene}\n"
             else:   
                 offspring[gene] = punnett_square(m, f)
                 if m[1] < 100 or f[1] < 100:

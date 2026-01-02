@@ -1,4 +1,5 @@
-from src.utils import *
+from src.utils import MORPHS, COMBO, INC_DOM
+import src.utils
 
 def extract_name_perc(trait):
     base_trait = trait.replace("het", "").strip()
@@ -9,9 +10,9 @@ def extract_name_perc(trait):
     if not perc.isnumeric(): 
         perc = 100
         if "poss" in trait.lower():
-            perc = 1
+            perc = 0.01
         elif "ph" in trait.lower() or "line" in trait.lower():
-            perc = 1
+            perc = 0.01
         elif "cross" in trait.lower():
             perc = 50
     else:
@@ -43,7 +44,11 @@ def identify_gene(trait, parent_genes):
             parent_genes[base_trait] = [(1, 1), perc]
         case "polygenic":
             parent_genes[base_trait] = [(1, 1), perc]
-        case "combo" | "linebreed_combo":
+        case "combo":
+            for trait in COMBO[trait]["components"].split(","):
+                identify_gene(trait.strip(), parent_genes)
+        case "linebreed_combo":
+            src.utils.LINEBREED_COMBO = trait
             for trait in COMBO[trait]["components"].split(","):
                 identify_gene(trait.strip(), parent_genes)
 
