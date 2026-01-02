@@ -123,18 +123,49 @@ def reconstruct_combo(label):
     return new_morph + untouched_genes
 
 def merge_probs(morphs):
+    """
+    Questa funzione non è completa. L'obiettivo sarebbe quelo di prendere i final results e unificare i risultati.
+    Ad esempio:
+    het Tremper x het Eclipse originano genotipicamente 25% het Eclipse, 25% het Tremper, 25% Normal, 25% het RAPTOR; 
+    nonostante ciò, i figli saranno tutti Normal 50% ph Tremper 50% ph Eclipse
+    Probabilmente anziché prendere direttamente i final results, conviene lavorare sui genbi ancora non raggruppati (quindi non i final results)
+    """
     new_morphs = []
     hets_counter = {}
-    for traits, perc in morphs:
+    print(morphs)
+    for traits, _ in morphs:
         for trait in traits:
-            gene_name = trait[2]
+            gene_name = trait[-1]
             gene_type = MORPHS[gene_name]["Type"]
             if gene_type == "recessive":
                 if "het" in trait[0]:
                     if gene_name in hets_counter.keys():
                         hets_counter[gene_name] += 1
                     else:
-                        hets_counter[gene_name] = 1
+                        hets_counter[gene_name] = 1 
+            if gene_type == "combo":
+                if "het" in trait[0]:
+                    for part in COMBO[gene_type]["components"]:
+                        if part in hets_counter.keys():
+                            hets_counter[part] += 1
+                        else:
+                            hets_counter[part] = 1 
+
+    for traits, perc in morphs:
+        new_traits = []
+        for trait in traits:
+            if "het" in trait[0]:
+                new_traits.append((f"{float(hets_counter[trait[2]]/len(morphs)):.2f} ph {trait[2]}",
+                                 trait[1],
+                                 trait[2]))
+            else:
+                new_traits.append(traits)
+        new_morphs.append([new_traits, perc])
+    return(new_morphs)
+
+    # in pratica bisogna sostituire het con ph ed eliminare dove non c'è scritto
+    # si può fare anche direttamente sulle combo facendo quest fun ricorsiva
+
     
             
 
@@ -190,7 +221,6 @@ def get_possible_outcomes(data):
                     active_traits.append((name + " line", trait[1], trait[2]))
         final_traits = reconstruct_combo(active_traits)
         final_traits.sort(key=lambda x: get_priority(x[0], x[1]))
-        print(active_traits, prob)
         combo_string = " ".join(final_traits[0] for final_traits in final_traits)
         if src.utils.LINEBREED_COMBO:
             current_morphs = set(trait[0] for trait in active_traits)
