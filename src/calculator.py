@@ -57,22 +57,36 @@ def calculate_offspring(sire, dam):
         else:
             if gene_type == "recessive" and not (f[0] == (1, 1) or m[0] == (1, 1)):
                 if f[0] == (0, 0) and m[1] < 100:
-                    offspring[gene] = "ph"
+                    if m[1]/2 < 25:
+                        offspring[gene] = "ph"
+                    else:
+                        offspring[gene] = f"{round(m[1]/2,0)}% ph"
                     message_ph += f"{gene} nella madre\n"
                 elif m[0] == (0, 0) and f[1] < 100:
-                    offspring[gene] = "ph"
+                    if f[1]/2 < 25:
+                        offspring[gene] = "ph"
+                    else:
+                        offspring[gene] = f"{round(f[1]/2,0)}% ph"
                     message_ph += f"{gene} nel padre\n"
                 else:
                     offspring[gene] = punnett_square(m, f)
-                    if m[1] < 100 or f[1] < 100:
-                        message_poss += f"{gene}\n"
+                    if m[1] < 100:
+                        message_ph += f"{gene} nel padre\n"
+                    if f[1] < 100:
+                        message_ph += f"{gene} nella madre\n"
             elif f[1] <= 1 and m[1] <= 1:
                 offspring[gene] = "poss"
                 message_poss += f"{gene}\n"
             else:   
                 offspring[gene] = punnett_square(m, f)
                 if m[1] < 100 or f[1] < 100:
-                    message_poss += f"{gene}\n"
+                    if MORPHS[gene]["Type"] == "recessive":
+                        if f[1] == 100:
+                            message_ph += f"{gene} nel padre\n"
+                        if m[1] == 100:
+                            message_ph += f"{gene} nella madre\n"
+                    else:
+                        message_poss += f"{gene}\n"
 
     message = None
     if len(messag_poly.split("\n")) > 2:

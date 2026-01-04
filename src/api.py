@@ -47,16 +47,25 @@ async def calculate_genetics(pair: BreedingPair):
     dam_genes = get_genes(dam_data)
 
     offspring, messages = calculate_offspring(sire_genes, dam_genes)
-    outcomes = get_possible_outcomes(offspring)
+    outcomes, phenotypes = get_possible_outcomes(offspring)
 
     # 3. Formattazione della risposta
     # Ordiniamo i risultati per probabilità (dal più alto al più basso)
     sorted_outcomes = sorted(outcomes, key=lambda x: x[1], reverse=True)
+    sorted_phenotypes = sorted(phenotypes, key=lambda x: x[1], reverse=True)
+    
+    def format_prob(p):
+        p_rounded = round(p, 2)
+        return str(int(p_rounded)) if p_rounded % 1 == 0 else f"{p_rounded:.2f}"
     
     return {
-        "results": [
-            {"morph": outcome[0], "probability": round(outcome[1], 2)} 
+        "genotypes": [
+            {"morph": outcome[0], "probability": format_prob(outcome[1])} 
             for outcome in sorted_outcomes
+        ],
+        "phenotypes": [
+            {"morph": phenotype[0], "probability": format_prob(phenotype[1])} 
+            for phenotype in sorted_phenotypes
         ],
         "notes": messages
     }

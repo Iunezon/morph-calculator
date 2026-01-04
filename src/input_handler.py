@@ -1,6 +1,18 @@
 from src.utils import MORPHS, COMBO, INC_DOM
 import src.utils
 
+def resolve_gene_name(trait):
+    if trait in MORPHS:
+        return trait
+    for gene, data in MORPHS.items():
+        if "Synonyms" in data:
+            synonyms_str = str(data["Synonyms"]).strip()
+            if synonyms_str and synonyms_str.lower() != 'nan':
+                synonyms = [s.strip() for s in synonyms_str.split(",")]
+                if trait in synonyms:
+                    return gene
+    return trait
+
 def extract_name_perc(trait):
     base_trait = trait.replace("het", "").strip()
     base_trait = base_trait.replace("Super ", "").strip()
@@ -24,6 +36,7 @@ def extract_name_perc(trait):
 
 def identify_gene(trait, parent_genes):
     base_trait, perc = extract_name_perc(trait)
+    base_trait = resolve_gene_name(base_trait)
 
     match MORPHS[base_trait]["Type"]:
         case "incomplete":

@@ -13,17 +13,17 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="p-4 bg-blue-50 rounded-lg border border-blue-100">
-                <h2 class="text-xl font-bold mb-2 text-blue-800">Sire (Padre)</h2>
+                <h2 class="text-xl font-bold mb-2 text-blue-800">Morph Padre</h2>
                 <label class="block text-sm mb-1 text-gray-600">Inserisci i tratti separati da virgola</label>
-                <textarea id="sireMorph" rows="3" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-400" 
-                placeholder="Es: Tremper Albino, Mack Snow"></textarea>
+                <input type="text" id="sireMorph" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-400" 
+                placeholder="Es: Tremper Albino, Mack Snow" list="morphs">
             </div>
 
             <div class="p-4 bg-pink-50 rounded-lg border border-pink-100">
-                <h2 class="text-xl font-bold mb-2 text-pink-800">Dam (Madre)</h2>
+                <h2 class="text-xl font-bold mb-2 text-pink-800">Morph Madre</h2>
                 <label class="block text-sm mb-1 text-gray-600">Inserisci i tratti separati da virgola</label>
-                <textarea id="damMorph" rows="3" class="w-full p-2 border rounded focus:ring-2 focus:ring-pink-400" 
-                placeholder="Es: White & Yellow, Panda"></textarea>
+                <input type="text" id="damMorph" class="w-full p-2 border rounded focus:ring-2 focus:ring-pink-400" 
+                placeholder="Es: White & Yellow, Panda" list="morphs">
             </div>
         </div>
 
@@ -35,8 +35,20 @@
         
         <div id="outputArea" class="hidden mt-8">
             <h3 class="text-2xl font-bold mb-4 border-b pb-2">Risultati Previsti</h3>
-            <ul id="resultsList" class="space-y-2">
-                </ul>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h4 class="text-xl font-semibold mb-2 text-blue-700">Genotipi</h4>
+                    <ul id="genotypesList" class="space-y-2">
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="text-xl font-semibold mb-2 text-green-700">Fenotipi</h4>
+                    <ul id="phenotypesList" class="space-y-2">
+                    </ul>
+                </div>
+            </div>
 
             <div id="notesArea" class="mt-6 p-4 bg-yellow-50 text-yellow-800 rounded border border-yellow-200 text-sm hidden">
                 <strong>Note genetiche:</strong> <span id="notesText"></span>
@@ -73,17 +85,29 @@
                 const data = await response.json();
 
                 // 4. Mostra i risultati
-                const list = document.getElementById('resultsList');
-                list.innerHTML = ''; // Pulisci vecchi risultati
+                const genotypesList = document.getElementById('genotypesList');
+                const phenotypesList = document.getElementById('phenotypesList');
+                genotypesList.innerHTML = ''; // Pulisci vecchi risultati
+                phenotypesList.innerHTML = '';
 
-                data.results.forEach(item => {
+                data.genotypes.forEach(item => {
                     const li = document.createElement('li');
                     li.className = "flex justify-between items-center bg-gray-50 p-3 rounded border hover:bg-gray-100";
                     li.innerHTML = `
                         <span class="font-medium">${item.morph}</span>
                         <span class="font-bold text-emerald-600">${item.probability}%</span>
                     `;
-                    list.appendChild(li);
+                    genotypesList.appendChild(li);
+                });
+
+                data.phenotypes.forEach(item => {
+                    const li = document.createElement('li');
+                    li.className = "flex justify-between items-center bg-gray-50 p-3 rounded border hover:bg-gray-100";
+                    li.innerHTML = `
+                        <span class="font-medium">${item.morph}</span>
+                        <span class="font-bold text-emerald-600">${item.probability}%</span>
+                    `;
+                    phenotypesList.appendChild(li);
                 });
 
                 // Gestione Note
@@ -103,5 +127,8 @@
             }
         }
     </script>
+
+    <datalist id="morphs">
+    </datalist>
 </body>
 </html>

@@ -1,6 +1,7 @@
 from src.utils import MORPHS, COMBO, INC_DOM
 import src.utils
 import itertools
+from collections import defaultdict
 
 def get_priority(label, gene_name):
     gene_type = MORPHS[gene_name]["Type"]
@@ -21,20 +22,23 @@ def get_priority(label, gene_name):
     if gene_type == 'linebreed':
         try:
             pct = float(label.split('%')[0])
-            return 5 if pct >= 25 else 7
-        except: return 4
+            return 2.7 if pct > 24 else 7
+        except: return 2.8
 
     if gene_type == 'linebreed_combo':
         return 2.5
         
     if gene_type == 'polygenic':
-        return 2.7
+        return 2.9
         
     if gene_type == 'recessive':
         if "het" in label:
             return 6
         if "ph" in label:
-            return 8
+            if "%" in label:
+                return 7.9
+            else:
+                return 8
         return 3
     
     if gene_type == 'combo':
@@ -45,7 +49,6 @@ def get_priority(label, gene_name):
         return 2.6
         
     return 100
-
 
 def reconstruct_combo(label):
     
@@ -61,13 +64,21 @@ def reconstruct_combo(label):
                     genes.remove(prefix + part)
                     data.remove(part)
             return prefix+k
-        
+    
     genes = [item[0] for item in label]
-    visuals = {g for g in genes if not (g.startswith('het') or g.startswith('poss') or g.startswith('ph'))}
+    visuals = {g for g in genes if not (g.startswith('het') or g.startswith('poss') or 'ph' in g)}
+    initial_has_visuals = bool(visuals)
     hets = {g.replace('het ', '') for g in genes if g.startswith('het ')}
-    ph = {g.replace('ph ', '') for g in genes if g.startswith('ph ')}
+    ph_groups = defaultdict(set)
+    for g in genes:
+        if 'ph ' in g:
+            parts = g.split('ph ', 1)
+            prefix = parts[0].strip()
+            gene = parts[1].strip()
+            ph_groups[prefix].add(gene)
     new_morph = []
-    possible_combos = {"visuals": {}, "hets": {}, "ph": {}}
+    possible_combos = {"visuals": {}, "hets": {}, "ph": defaultdict(dict)}
+
     untouched_genes = []
 
     for k, v in COMBO.items():
@@ -80,30 +91,46 @@ def reconstruct_combo(label):
             res_h = get_combo_if_exists(parts, hets)
             if res_h: possible_combos["hets"][k] = res_h
             
-            res_p = get_combo_if_exists(parts, ph)
-            if res_p: possible_combos["ph"][k] = res_p
+            for prefix, genes_in_prefix in ph_groups.items():
+                res_p = get_combo_if_exists(parts, genes_in_prefix)
+                if res_p:
+                    possible_combos["ph"][prefix][k] = res_p
     
     for category, found_dict in possible_combos.items():
         if found_dict:
-            sorted_combos = dict(sorted(found_dict.items(), key=lambda item: len(item[1]), reverse=True))
+            if category == "ph":
+                for prefix, combos in found_dict.items():
+                    sorted_combos = dict(sorted(combos.items(), key=lambda item: len(item[1]), reverse=True))
 
-            for k, parts in sorted_combos.items():
-                if k == src.utils.LINEBREED_COMBO and len(parts) != len(genes):
-                    continue
-                if category == "visuals":
-                    res = remove_combo_parts(k, parts, visuals)
-                elif category == "hets":
-                    res = remove_combo_parts(k, parts, hets, "het ")
-                else:
-                    res = remove_combo_parts(k, parts, ph, "ph ")
-                
-                if res:
-                    new_morph.append((res, k))
+                    for k, parts in sorted_combos.items():
+                        if k == src.utils.LINEBREED_COMBO and len(parts) != len(genes):
+                            continue
+                        full_prefix = "ph " if prefix == '' else prefix + " ph "
+                        res = remove_combo_parts(k, parts, ph_groups[prefix], full_prefix)
+                        if res:
+                            new_morph.append((res, k))
+            else:
+                sorted_combos = dict(sorted(found_dict.items(), key=lambda item: len(item[1]), reverse=True))
+
+                for k, parts in sorted_combos.items():
+                    if k == src.utils.LINEBREED_COMBO and len(parts) != len(genes):
+                        continue
+                    if category == "visuals":
+                        res = remove_combo_parts(k, parts, visuals)
+                    elif category == "hets":
+                        res = remove_combo_parts(k, parts, hets, "het ")
+                    if res:
+                        new_morph.append((res, k))
 
     for gene in genes:
         gene_name = gene
         if "%" in gene:
             gene_name = gene.split('%')[1].strip()
+            if gene_name.startswith('ph '):
+                gene_name = gene_name.replace('ph ', '')
+                if "." in gene:
+                    decimals = gene.split("%")[0].split(".")[1]
+                    gene = gene.replace(f".{decimals}", "")
         if "cross" in gene:
             gene_name = gene.replace("cross", "").strip()
         if "line" in gene:
@@ -117,22 +144,13 @@ def reconstruct_combo(label):
             gene_name = gene.replace('ph ', '')
         untouched_genes.append((gene, gene_name))
     
-    if not visuals:
+    if not initial_has_visuals:
         untouched_genes.append(("Normal", "Normal"))
-
     return new_morph + untouched_genes
 
 def merge_probs(morphs):
-    """
-    Questa funzione non è completa. L'obiettivo sarebbe quelo di prendere i final results e unificare i risultati.
-    Ad esempio:
-    het Tremper x het Eclipse originano genotipicamente 25% het Eclipse, 25% het Tremper, 25% Normal, 25% het RAPTOR; 
-    nonostante ciò, i figli saranno tutti Normal 50% ph Tremper 50% ph Eclipse
-    Probabilmente anziché prendere direttamente i final results, conviene lavorare sui genbi ancora non raggruppati (quindi non i final results)
-    """
-    new_morphs = []
     hets_counter = {}
-    print(morphs)
+
     for traits, _ in morphs:
         for trait in traits:
             gene_name = trait[-1]
@@ -142,33 +160,60 @@ def merge_probs(morphs):
                     if gene_name in hets_counter.keys():
                         hets_counter[gene_name] += 1
                     else:
-                        hets_counter[gene_name] = 1 
-            if gene_type == "combo":
-                if "het" in trait[0]:
-                    for part in COMBO[gene_type]["components"]:
-                        if part in hets_counter.keys():
-                            hets_counter[part] += 1
-                        else:
-                            hets_counter[part] = 1 
-
-    for traits, perc in morphs:
-        new_traits = []
-        for trait in traits:
-            if "het" in trait[0]:
-                new_traits.append((f"{float(hets_counter[trait[2]]/len(morphs)):.2f} ph {trait[2]}",
-                                 trait[1],
-                                 trait[2]))
-            else:
-                new_traits.append(traits)
-        new_morphs.append([new_traits, perc])
-    return(new_morphs)
-
-    # in pratica bisogna sostituire het con ph ed eliminare dove non c'è scritto
-    # si può fare anche direttamente sulle combo facendo quest fun ricorsiva
-
+                        hets_counter[gene_name] = 1
     
-            
+    new_morphs = {}
+    def format_pct(p):
+        p_rounded = round(p, 0)
+        pct_str = f"{p_rounded:.2f}".rstrip('0').rstrip('.')
+        return pct_str + "% ph"
+    
+    for morph, pct in morphs:
+        new_morph = []
+        for trait in morph:
+            if trait[-1] in hets_counter.keys():
+                if "het" in trait[0]:
+                    calc_pct = float(hets_counter[trait[-1]] / len(morphs)) * 100
+                    if (calc_pct >= 50 and MORPHS[trait[-1]]["Type"] == "recessive") or calc_pct == 100:
+                        new_morph.append(trait)
+                    else:
+                        new_label = trait[0].replace("het", format_pct(calc_pct))
+                        new_morph.append((new_label, trait[-1]))
+                else:
+                    new_morph.append((trait[0], trait[-1]))
+            else:
+                new_morph.append((trait[0], trait[-1]))
+        for rec in hets_counter.keys():
+            if not rec in [t[-1] for t in morph]:
+                calc_pct = float(hets_counter[rec] / len(morphs)) * 100
+                if (calc_pct >= 50 and MORPHS[rec]["Type"] == "recessive") or calc_pct == 100:
+                    new_morph.append((f"het {rec}", rec))
+                else:
+                    new_morph.append((format_pct(calc_pct) + f" {rec}", rec))
+        if tuple(sorted(new_morph)) in new_morphs:
+            new_morphs[tuple(sorted(new_morph))] += pct
+        else:
+            new_morphs[tuple(sorted(new_morph))] = pct
+    
+    return new_morphs
 
+def generate_morph_name(final_traits, active_traits):
+    combo_string = " ".join(final_traits[0] for final_traits in final_traits).replace(".0", "")
+    if src.utils.LINEBREED_COMBO:
+        current_morphs = set(trait[0] for trait in active_traits)
+        required_morphs = set(COMBO[src.utils.LINEBREED_COMBO]["components"].split(","))
+        if current_morphs != required_morphs:
+            is_maker = True
+            for req in required_morphs:
+                req = req.replace("Super ", "")
+                if MORPHS[req]["Type"] == "linebreed":
+                    for trait in active_traits:
+                        if MORPHS[trait[-1]]["Type"] == "linebreed":
+                            if trait[-1] != trait[0]:
+                                is_maker = False
+            if is_maker:
+                combo_string += f" {src.utils.LINEBREED_COMBO} maker"
+    return combo_string
 
 def get_possible_outcomes(data):
     all_options = []
@@ -189,13 +234,11 @@ def get_possible_outcomes(data):
                     gene_choices.append((label, weight / 100, key))
         else:
             match value:
-                case 100:
-                    gene_choices.append((f"{key}", 1.0, key))
-                case float():
-                    if int(value) == float(value):
-                        gene_choices.append((f"{value:.0f}% {key}", 1.0, key))
+                case float() | int():
+                    if value < 92:
+                        gene_choices.append((f"{round(value,0)}% {key}", 1.0, key))
                     else:
-                        gene_choices.append((f"{value:.2f}% {key}", 1.0, key))
+                        gene_choices.append((f"{key}", 1.0, key))
                 case  "":
                     gene_choices.append((f"{key}", 1.0, key))
                 case _:
@@ -203,7 +246,8 @@ def get_possible_outcomes(data):
         all_options.append(gene_choices)
     raw_combos = list(itertools.product(*all_options))
 
-    final_results = []
+    possible_phenotypes = []
+    genotypes = []
     for combo in raw_combos:
         prob = 1.0
         for trait in combo:
@@ -219,15 +263,17 @@ def get_possible_outcomes(data):
                 elif float(pct) < 25:
                     active_traits.remove(trait)
                     active_traits.append((name + " line", trait[1], trait[2]))
+        possible_phenotypes.append([active_traits, prob])
         final_traits = reconstruct_combo(active_traits)
         final_traits.sort(key=lambda x: get_priority(x[0], x[1]))
-        combo_string = " ".join(final_traits[0] for final_traits in final_traits)
-        if src.utils.LINEBREED_COMBO:
-            current_morphs = set(trait[0] for trait in active_traits)
-            required_morphs = set(COMBO[src.utils.LINEBREED_COMBO]["components"].split(","))
-            check_not_linebreed_combo = not(current_morphs == required_morphs)
-            if check_not_linebreed_combo:
-                combo_string += f" {src.utils.LINEBREED_COMBO} maker"
-        final_results.append((combo_string, prob * 100))
+        combo_string = generate_morph_name(final_traits, active_traits)
+        genotypes.append((combo_string, prob * 100))
+    
+    phenotypes = []
+    for morph, pct in merge_probs(possible_phenotypes).items():
+        final_traits = reconstruct_combo(list(morph))
+        final_traits.sort(key=lambda x: get_priority(x[0], x[1]))
+        combo_string = generate_morph_name(final_traits, active_traits)
+        phenotypes.append((combo_string, pct * 100))
 
-    return final_results
+    return genotypes, phenotypes
