@@ -3,91 +3,363 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leopard Gecko Calculator</title>
+    <title>Leopard Gecko Calculator Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Stili custom per la scrollbar dei suggerimenti */
+        .suggestions-list::-webkit-scrollbar { width: 6px; }
+        .suggestions-list::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
+    </style>
 </head>
 <body class="bg-slate-100 font-sans text-slate-800">
 
-    <div class="max-w-3xl mx-auto mt-10 p-6 bg-white rounded-xl shadow-xl">
-        <h1 class="text-3xl font-bold text-center text-emerald-600 mb-8">🧬 Gecko Genetics</h1>
+    <div class="max-w-4xl mx-auto mt-10 p-6 bg-white rounded-xl shadow-xl">
+        <h1 class="text-3xl font-bold text-center text-emerald-600 mb-8">🧬 Gecko Genetics Pro</h1>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="p-4 bg-blue-50 rounded-lg border border-blue-100">
-                <h2 class="text-xl font-bold mb-2 text-blue-800">Morph Padre</h2>
-                <label class="block text-sm mb-1 text-gray-600">Inserisci i tratti separati da virgola</label>
-                <input type="text" id="sireMorph" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-400" 
-                placeholder="Es: Tremper Albino, Mack Snow" list="morphs">
+            
+            <div class="p-4 bg-blue-50 rounded-lg border border-blue-100 relative">
+                <h2 class="text-xl font-bold mb-2 text-blue-800">Morph Padre ♂</h2>
+                <div class="mb-2 text-sm text-gray-500">Aggiungi tratti (es. Mack Snow, Tremper...)</div>
+                
+                <div id="sireTags" class="flex flex-wrap gap-2 mb-2 min-h-[40px]"></div>
+
+                <div class="relative">
+                    <input type="text" id="sireInput" 
+                        class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-400 outline-none" 
+                        placeholder="Digita per cercare..." autocomplete="off">
+                    <ul id="sireSuggestions" class="suggestions-list hidden absolute z-10 w-full bg-white border border-gray-300 rounded mt-1 max-h-48 overflow-y-auto shadow-lg"></ul>
+                </div>
             </div>
 
-            <div class="p-4 bg-pink-50 rounded-lg border border-pink-100">
-                <h2 class="text-xl font-bold mb-2 text-pink-800">Morph Madre</h2>
-                <label class="block text-sm mb-1 text-gray-600">Inserisci i tratti separati da virgola</label>
-                <input type="text" id="damMorph" class="w-full p-2 border rounded focus:ring-2 focus:ring-pink-400" 
-                placeholder="Es: White & Yellow, Panda" list="morphs">
+            <div class="p-4 bg-pink-50 rounded-lg border border-pink-100 relative">
+                <h2 class="text-xl font-bold mb-2 text-pink-800">Morph Madre ♀</h2>
+                <div class="mb-2 text-sm text-gray-500">Aggiungi tratti (es. Enigma, Eclipse...)</div>
+
+                <div id="damTags" class="flex flex-wrap gap-2 mb-2 min-h-[40px]"></div>
+
+                <div class="relative">
+                    <input type="text" id="damInput" 
+                        class="w-full p-2 border rounded focus:ring-2 focus:ring-pink-400 outline-none" 
+                        placeholder="Digita per cercare..." autocomplete="off">
+                    <ul id="damSuggestions" class="suggestions-list hidden absolute z-10 w-full bg-white border border-gray-300 rounded mt-1 max-h-48 overflow-y-auto shadow-lg"></ul>
+                </div>
             </div>
         </div>
 
-        <button onclick="calcolaGenetica()" class="w-full mt-6 bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-6 rounded-lg transition duration-300 transform hover:scale-[1.01]">
-            Calcola Cuccioli
+        <button onclick="calculate()" class="w-full mt-6 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 shadow-md">
+            🧪 Calcola Probabilità
         </button>
 
-        <div id="loading" class="hidden text-center mt-6 text-gray-500">Calcolo in corso...</div>
-        
-        <div id="outputArea" class="hidden mt-8">
-            <h3 class="text-2xl font-bold mb-4 border-b pb-2">Risultati Previsti</h3>
-            
+        <div id="loader" class="hidden mt-6 text-center">
+            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
+            <p class="text-emerald-600 mt-2">Calcolo in corso...</p>
+        </div>
+
+        <div id="output" class="hidden mt-8 space-y-6 animate-fade-in">
+            <div id="notesArea" class="hidden p-4 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800 rounded">
+                <h3 class="font-bold">⚠️ Note:</h3>
+                <p id="notesText" class="text-sm"></p>
+            </div>
+
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                    <h4 class="text-xl font-semibold mb-2 text-blue-700">Genotipi</h4>
-                    <ul id="genotypesList" class="space-y-2">
-                    </ul>
+                    <h3 class="text-lg font-bold text-slate-700 mb-3 border-b pb-2">Genotipi Probabili</h3>
+                    <ul id="genotypesList" class="space-y-2 text-sm"></ul>
                 </div>
-                
                 <div>
-                    <h4 class="text-xl font-semibold mb-2 text-green-700">Fenotipi</h4>
-                    <ul id="phenotypesList" class="space-y-2">
-                    </ul>
+                    <h3 class="text-lg font-bold text-slate-700 mb-3 border-b pb-2">Fenotipi (Visibili)</h3>
+                    <ul id="phenotypesList" class="space-y-2 text-sm"></ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="attributeModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+        <div class="bg-white p-6 rounded-lg shadow-2xl w-96 transform transition-all scale-100">
+            <h3 id="modalTitle" class="text-xl font-bold mb-4 text-gray-800">Dettagli Morph</h3>
+            <p id="modalMorphName" class="text-emerald-600 font-semibold mb-4 text-lg"></p>
+            
+            <div id="recessiveOptions" class="hidden space-y-3">
+                <label class="flex items-center space-x-2 cursor-pointer">
+                    <input type="radio" name="recType" value="visual" checked class="text-emerald-600 focus:ring-emerald-500">
+                    <span>Visuale (Omozigote)</span>
+                </label>
+                <label class="flex items-center space-x-2 cursor-pointer">
+                    <input type="radio" name="recType" value="het" class="text-emerald-600 focus:ring-emerald-500">
+                    <span>Het (Eterozigote)</span>
+                </label>
+                <label class="flex items-center space-x-2 cursor-pointer">
+                    <input type="radio" name="recType" value="ph" class="text-emerald-600 focus:ring-emerald-500">
+                    <span>Possibile Het (PH)</span>
+                </label>
+                
+                <div id="phPercentContainer" class="hidden pl-6">
+                    <label class="block text-sm text-gray-600 mb-1">Probabilità %</label>
+                    <select id="phPercent" class="w-full p-2 border rounded bg-gray-50">
+                        <option value="66">66%</option>
+                        <option value="50">50%</option>
+                        <option value="custom">Custom</option>
+                    </select>
                 </div>
             </div>
 
-            <div id="notesArea" class="mt-6 p-4 bg-yellow-50 text-yellow-800 rounded border border-yellow-200 text-sm hidden">
-                <strong>Note genetiche:</strong> <span id="notesText"></span>
+            <div id="linebreedOptions" class="hidden space-y-3">
+                <label class="block text-sm text-gray-600 mb-1">Tipo di selezione</label>
+                <select id="lineType" class="w-full p-2 border rounded bg-gray-50 mb-3">
+                    <option value="line">Line (Pura/Standard)</option>
+                    <option value="cross">Cross (Outcross)</option>
+                    <option value="percent">Percentuale / Intensità</option>
+                </select>
+
+                <div id="linePercentContainer" class="hidden">
+                    <label class="block text-sm text-gray-600 mb-1">Percentuale %</label>
+                    <input type="number" id="linePercentVal" class="w-full p-2 border rounded" placeholder="Es. 50">
+                </div>
+            </div>
+
+            <div class="mt-6 flex justify-end space-x-3">
+                <button onclick="closeModal()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded text-gray-700">Annulla</button>
+                <button onclick="confirmAddMorph()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded shadow">Aggiungi</button>
             </div>
         </div>
     </div>
 
     <script>
-        async function calcolaGenetica() {
-            // 1. Prendi i dati dall'input
-            const sireInput = document.getElementById('sireMorph').value;
-            const damInput = document.getElementById('damMorph').value;
-            
-            const loader = document.getElementById('loading');
-            const output = document.getElementById('outputArea');
-            
-            output.classList.add('hidden');
-            loader.classList.remove('hidden');
+        // STATO GLOBALE
+        let allMorphs = []; // Caricato da API
+        let currentSelection = null; // Morph in attesa di conferma nel modale
+        let activeInputContext = null; // 'sire' o 'dam'
 
-            // 2. Costruisci il JSON esattamente come nel tuo file test_1.json
-            const payload = {
-                sire: { morph: sireInput },
-                dam: { morph: damInput }
-            };
+        // Store per i tag selezionati
+        let selectedGenes = {
+            sire: [],
+            dam: []
+        };
+
+        // 1. Carica i morph all'avvio
+        async function loadMorphs() {
+            try {
+                const res = await fetch('http://127.0.0.1:8000/morphs');
+                allMorphs = await res.json();
+                console.log("Morphs caricati:", allMorphs.length);
+            } catch (err) {
+                console.error("Errore caricamento morphs:", err);
+                alert("Impossibile caricare la lista dei morph. Assicurati che api.py stia girando.");
+            }
+        }
+        loadMorphs();
+
+        // 2. Setup Input Autocomplete
+        function setupAutocomplete(inputId, listId, context) {
+            const input = document.getElementById(inputId);
+            const list = document.getElementById(listId);
+
+            input.addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase();
+                list.innerHTML = '';
+                if (query.length < 2) {
+                    list.classList.add('hidden');
+                    return;
+                }
+
+                // Filtra morph e sinonimi
+                const matches = allMorphs.filter(m => 
+                    m.name.toLowerCase().includes(query) || 
+                    (m.synonyms && m.synonyms.toLowerCase().includes(query))
+                );
+
+                if (matches.length > 0) {
+                    list.classList.remove('hidden');
+                    matches.forEach(m => {
+                        const li = document.createElement('li');
+                        li.className = "p-2 hover:bg-emerald-50 cursor-pointer text-sm border-b last:border-0";
+                        // Evidenzia sinonimo se matchato
+                        let label = m.name;
+                        if (m.synonyms && m.synonyms.toLowerCase().includes(query)) {
+                            label += ` <span class="text-xs text-gray-500">(${m.synonyms})</span>`;
+                        }
+                        li.innerHTML = label;
+                        li.onclick = () => initiateSelection(m, context);
+                        list.appendChild(li);
+                    });
+                } else {
+                    list.classList.add('hidden');
+                }
+            });
+
+            // Chiudi lista se clicco fuori
+            document.addEventListener('click', (e) => {
+                if (e.target !== input) list.classList.add('hidden');
+            });
+        }
+
+        setupAutocomplete('sireInput', 'sireSuggestions', 'sire');
+        setupAutocomplete('damInput', 'damSuggestions', 'dam');
+
+        // 3. Logica Modale e Selezione
+        function initiateSelection(morph, context) {
+            document.getElementById(context + 'Input').value = ''; // Pulisci input
+            document.getElementById(context + 'Suggestions').classList.add('hidden');
+
+            // Se il tipo richiede opzioni, apri modale. Altrimenti aggiungi diretto.
+            const type = morph.type.toLowerCase();
+            
+            // Logica semplice: se recessive o linebreed, chiedi dettagli.
+            // Puoi affinare la logica in base alle tue esigenze.
+            if (type.includes('recessive') || type.includes('linebreed') || type === 'ph') {
+                openModal(morph, context);
+            } else {
+                // Dominanti / Co-dom / altro aggiunti diretti
+                addTag(context, formatFinalString(morph.name, 'default'), morph);
+            }
+        }
+
+        function openModal(morph, context) {
+            currentSelection = { morph, context };
+            activeInputContext = context;
+
+            // Reset UI Modale
+            document.getElementById('modalMorphName').innerText = morph.name;
+            document.getElementById('recessiveOptions').classList.add('hidden');
+            document.getElementById('linebreedOptions').classList.add('hidden');
+            document.getElementById('phPercentContainer').classList.add('hidden');
+            document.getElementById('linePercentContainer').classList.add('hidden');
+
+            const type = morph.type.toLowerCase();
+
+            if (type.includes('recessive')) {
+                document.getElementById('recessiveOptions').classList.remove('hidden');
+                // Reset radio
+                document.querySelector('input[name="recType"][value="visual"]').checked = true;
+            } else if (type.includes('linebreed')) {
+                document.getElementById('linebreedOptions').classList.remove('hidden');
+                document.getElementById('lineType').value = 'line';
+            }
+
+            document.getElementById('attributeModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('attributeModal').classList.add('hidden');
+            currentSelection = null;
+        }
+
+        // Gestione UI dinamica nel modale
+        document.querySelectorAll('input[name="recType"]').forEach(el => {
+            el.addEventListener('change', (e) => {
+                const phDiv = document.getElementById('phPercentContainer');
+                if (e.target.value === 'ph') phDiv.classList.remove('hidden');
+                else phDiv.classList.add('hidden');
+            });
+        });
+
+        document.getElementById('lineType').addEventListener('change', (e) => {
+            const percDiv = document.getElementById('linePercentContainer');
+            if (e.target.value === 'percent') percDiv.classList.remove('hidden');
+            else percDiv.classList.add('hidden');
+        });
+
+        // 4. Conferma dal Modale
+        function confirmAddMorph() {
+            if (!currentSelection) return;
+            const { morph, context } = currentSelection;
+            const type = morph.type.toLowerCase();
+            let finalString = morph.name;
+
+            if (type.includes('recessive')) {
+                const recType = document.querySelector('input[name="recType"]:checked').value;
+                if (recType === 'het') {
+                    finalString = `Het ${morph.name}`;
+                } else if (recType === 'ph') {
+                    const perc = document.getElementById('phPercent').value;
+                    const val = perc === 'custom' ? '??' : perc;
+                    finalString = `${val}% Poss Het ${morph.name}`;
+                }
+            } else if (type.includes('linebreed')) {
+                const lineType = document.getElementById('lineType').value;
+                if (lineType === 'cross') {
+                    finalString = `${morph.name} Cross`;
+                } else if (lineType === 'percent') {
+                    const pVal = document.getElementById('linePercentVal').value || '50';
+                    // Formattazione: "Black Night 50%" o "50% Black Night"
+                    // Qui uso la convenzione più comune per i calcolatori testuali
+                    finalString = `${morph.name} ${pVal}%`; 
+                }
+            }
+
+            addTag(context, finalString, morph);
+            closeModal();
+        }
+
+        // Funzione Helper formattazione (se non si passa dal modale)
+        function formatFinalString(name, mode) {
+            return name; 
+        }
+
+        // 5. Gestione Tags
+        function addTag(context, label, morphObj) {
+            selectedGenes[context].push(label);
+            renderTags(context);
+        }
+
+        function removeTag(context, index) {
+            selectedGenes[context].splice(index, 1);
+            renderTags(context);
+        }
+
+        function renderTags(context) {
+            const container = document.getElementById(context + 'Tags');
+            container.innerHTML = '';
+            
+            selectedGenes[context].forEach((tagText, index) => {
+                const tag = document.createElement('div');
+                // Colori diversi in base al contesto
+                const colorClass = context === 'sire' ? 'bg-blue-100 text-blue-800 border-blue-200' : 'bg-pink-100 text-pink-800 border-pink-200';
+                
+                tag.className = `flex items-center px-3 py-1 rounded-full text-sm font-medium border ${colorClass} transition transform hover:scale-105`;
+                tag.innerHTML = `
+                    <span>${tagText}</span>
+                    <button onclick="removeTag('${context}', ${index})" class="ml-2 text-gray-500 hover:text-red-500 focus:outline-none font-bold">
+                        &times;
+                    </button>
+                `;
+                container.appendChild(tag);
+            });
+        }
+
+        // 6. Calcolo Finale
+        async function calculate() {
+            const sireString = selectedGenes.sire.join(', ');
+            const damString = selectedGenes.dam.join(', ');
+
+            if (!sireString && !damString) {
+                alert("Seleziona almeno un tratto genetico!");
+                return;
+            }
+
+            const loader = document.getElementById('loader');
+            const output = document.getElementById('output');
+            
+            loader.classList.remove('hidden');
+            output.classList.add('hidden');
 
             try {
-                // 3. Invia al backend Python
                 const response = await fetch('http://127.0.0.1:8000/calculate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify({
+                        sire: { morph: sireString },
+                        dam: { morph: damString }
+                    })
                 });
 
                 const data = await response.json();
 
-                // 4. Mostra i risultati
+                // Render Risultati
                 const genotypesList = document.getElementById('genotypesList');
                 const phenotypesList = document.getElementById('phenotypesList');
-                genotypesList.innerHTML = ''; // Pulisci vecchi risultati
+                genotypesList.innerHTML = '';
                 phenotypesList.innerHTML = '';
 
                 data.genotypes.forEach(item => {
@@ -110,10 +382,9 @@
                     phenotypesList.appendChild(li);
                 });
 
-                // Gestione Note
                 if (data.notes && data.notes.length > 0) {
                     document.getElementById('notesArea').classList.remove('hidden');
-                    document.getElementById('notesText').innerText = data.notes; // O array join se è una lista
+                    document.getElementById('notesText').innerText = Array.isArray(data.notes) ? data.notes.join("\n") : data.notes;
                 } else {
                     document.getElementById('notesArea').classList.add('hidden');
                 }
@@ -127,8 +398,5 @@
             }
         }
     </script>
-
-    <datalist id="morphs">
-    </datalist>
 </body>
 </html>

@@ -17,13 +17,13 @@ def extract_name_perc(trait):
     base_trait = trait.replace("het", "").strip()
     base_trait = base_trait.replace("Super ", "").strip()
     base_trait = base_trait.replace("poss", "").strip()
-    base_trait = base_trait.replace("ph", "").strip()
+    base_trait = base_trait.replace("ph ", "").strip()
     perc = base_trait.split(" ")[0].replace("%","").strip()
     if not perc.isnumeric(): 
         perc = 100
         if "poss" in trait.lower():
             perc = 0.01
-        elif "ph" in trait.lower() or "line" in trait.lower():
+        elif "ph " in trait.lower() or "line" in trait.lower():
             perc = 0.01
         elif "cross" in trait.lower():
             perc = 50
@@ -45,7 +45,7 @@ def identify_gene(trait, parent_genes):
             else:
                 parent_genes[base_trait] = [(1, 0), perc]
         case "recessive":
-            if "het" in trait.lower() or "ph" in trait.lower():
+            if "het " in trait.lower() or "ph " in trait.lower():
                 parent_genes[base_trait] = [(0, 1), perc]
             else:
                 parent_genes[base_trait] = [(1, 1), perc]
