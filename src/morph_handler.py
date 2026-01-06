@@ -200,6 +200,7 @@ def merge_probs(morphs):
 def generate_morph_name(final_traits, active_traits):
     combo_string = " ".join(final_traits[0] for final_traits in final_traits).replace(".0", "")
     if src.utils.LINEBREED_COMBO:
+        print("here")
         current_morphs = set(trait[0] for trait in active_traits)
         required_morphs = set(COMBO[src.utils.LINEBREED_COMBO]["components"].split(","))
         if current_morphs != required_morphs:

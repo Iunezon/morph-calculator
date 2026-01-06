@@ -25,6 +25,7 @@ sys.path.append(CURRENT_DIR)
 from src.calculator import calculate_offspring
 from src.input_handler import get_genes
 from src.morph_handler import get_possible_outcomes
+import src.utils
 
 app = FastAPI()
 
@@ -64,6 +65,7 @@ def get_morph_list():
     morphs = []
     # Puntiamo dritti alla cartella data/
     file_path = os.path.join(DATA_DIR, "morph_list.csv")
+    src.utils.LINEBREED_COMBO = None
     
     if not os.path.exists(file_path):
         print(f"Errore: CSV non trovato in {file_path}")

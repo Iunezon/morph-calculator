@@ -18,6 +18,9 @@ def extract_name_perc(trait):
     base_trait = base_trait.replace("Super ", "").strip()
     base_trait = base_trait.replace("poss", "").strip()
     base_trait = base_trait.replace("ph ", "").strip()
+    base_trait = base_trait.replace("Cross", "").strip()
+    base_trait = base_trait.replace("Line", "").strip()
+    base_trait = base_trait.replace("Pure", "").strip()
     perc = base_trait.split(" ")[0].replace("%","").strip()
     if not perc.isnumeric(): 
         perc = 100
@@ -61,8 +64,8 @@ def identify_gene(trait, parent_genes):
             for trait in COMBO[trait]["components"].split(","):
                 identify_gene(trait.strip(), parent_genes)
         case "linebreed_combo":
-            src.utils.LINEBREED_COMBO = trait
-            for trait in COMBO[trait]["components"].split(","):
+            src.utils.LINEBREED_COMBO = base_trait
+            for trait in COMBO[base_trait]["components"].split(","):
                 identify_gene(trait.strip(), parent_genes)
 
 def get_genes(parent):
